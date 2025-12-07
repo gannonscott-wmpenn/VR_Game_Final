@@ -17,7 +17,8 @@ import {
   Interactable,
   ScreenSpace,
   PhysicsBody, PhysicsShape, PhysicsShapeType, PhysicsState, PhysicsSystem,
-  createSystem
+  createSystem,
+  OneHandGrabbable
 } from '@iwsdk/core';
 
 
@@ -42,18 +43,19 @@ World.create(document.getElementById('scene-container'), {
     features: { handTracking: true, layers: false } 
   },
   features: { locomotion: { useWorker: true }, grabbing: true, physics: true},
-  level: '/glxf/Composition.glxf' 
+  level: '/glxf/Arena.glxf' 
 }).then((world) => {
   const { camera } = world;
   
   // Create a green sphere
-  const sphereGeometry = new SphereGeometry(0.25, 32, 32);
+  const sphereGeometry = new SphereGeometry(0.05, 32, 32);
   const greenMaterial = new MeshStandardMaterial({ color: "red" });
   const sphere = new Mesh(sphereGeometry, greenMaterial);
   sphere.position.set(1, 1.5, -3);
   const sphereEntity = world.createTransformEntity(sphere);
   sphereEntity.addComponent(PhysicsShape, { shape: PhysicsShapeType.Auto,  density: 0.2,  friction: 0.5,  restitution: 0.9 });
   sphereEntity.addComponent(PhysicsBody, { state: PhysicsState.Dynamic });
+  sphereEntity.addComponent(OneHandGrabbable);
 
   // create a floor
   const floorMesh = new Mesh(new PlaneGeometry(20, 20), new MeshStandardMaterial({color:"tan"}));
@@ -63,17 +65,12 @@ World.create(document.getElementById('scene-container'), {
   floorEntity.addComponent(PhysicsShape, { shape: PhysicsShapeType.Auto});
   floorEntity.addComponent(PhysicsBody, { state: PhysicsState.Static });
 
-  let numBounces = 0;
   const GameLoopSystem = class extends createSystem() {
     update(delta, time) {
-      //console.log(sphereEntity.object3D.position.y);
-      if (sphereEntity.object3D.position.y < 0.27) {
-          numBounces += 1;
-          console.log(`Sphere has bounced ${numBounces} times`);
-          //sphereEntity.destroy()
-      }
+      //Things that Need to Update Every Tick
     }
   };
+
   world.registerSystem(GameLoopSystem);
 
 
