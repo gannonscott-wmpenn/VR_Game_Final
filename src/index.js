@@ -18,11 +18,14 @@ import {
   ScreenSpace,
   PhysicsBody, PhysicsShape, PhysicsShapeType, PhysicsState, PhysicsSystem,
   createSystem,
-  OneHandGrabbable
+  OneHandGrabbable,
+  Group
 } from '@iwsdk/core';
 
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 import { PanelSystem } from './panel.js';
+import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 
 const assets = {
@@ -46,24 +49,50 @@ World.create(document.getElementById('scene-container'), {
   level: '/glxf/Arena.glxf' 
 }).then((world) => {
   const { camera } = world;
-  
-  // Create a green sphere
-  const sphereGeometry = new SphereGeometry(0.05, 32, 32);
-  const greenMaterial = new MeshStandardMaterial({ color: "red" });
-  const sphere = new Mesh(sphereGeometry, greenMaterial);
-  sphere.position.set(1, 1.5, -3);
-  const sphereEntity = world.createTransformEntity(sphere);
-  sphereEntity.addComponent(PhysicsShape, { shape: PhysicsShapeType.Auto,  density: 0.2,  friction: 0.5,  restitution: 0.9 });
-  sphereEntity.addComponent(PhysicsBody, { state: PhysicsState.Dynamic });
-  sphereEntity.addComponent(OneHandGrabbable);
 
   // create a floor
-  const floorMesh = new Mesh(new PlaneGeometry(20, 20), new MeshStandardMaterial({color:"tan"}));
+  const floorMesh = new Mesh(new PlaneGeometry(36, 36), new MeshStandardMaterial({color: 0xC2B280 }));
   floorMesh.rotation.x = -Math.PI / 2;
   const floorEntity = world.createTransformEntity(floorMesh);
   floorEntity.addComponent(LocomotionEnvironment, { type: EnvironmentType.STATIC });
   floorEntity.addComponent(PhysicsShape, { shape: PhysicsShapeType.Auto});
   floorEntity.addComponent(PhysicsBody, { state: PhysicsState.Static });
+
+  // Arena walls since Spatial Editor model doesn't want to load.
+  const wallMesh0 = new Mesh(new PlaneGeometry(36, 5), new MeshStandardMaterial({color: 0xCB4154 }));
+  const arenaWalls = new Group;
+  wallMesh0.position.set(0,2.5,-18);
+  arenaWalls.add(wallMesh0);
+
+  const wallMesh1 = wallMesh0.clone();
+  wallMesh1.position.set(0,2.5,18);
+  wallMesh1.rotation.y = Math.PI / 1;
+  arenaWalls.add(wallMesh1);
+
+  const wallMesh2 = wallMesh0.clone();
+  wallMesh2.position.set(18,2.5,0);
+  wallMesh2.rotation.y = -Math.PI / 2;
+  arenaWalls.add(wallMesh2);
+
+  const wallMesh3 = wallMesh0.clone();
+  wallMesh3.position.set(-18,2.5,0);
+  wallMesh3.rotation.y = Math.PI / 2;
+  arenaWalls.add(wallMesh3);
+
+  const wallsEntity = world.createTransformEntity(arenaWalls);
+  wallsEntity.addComponent(LocomotionEnvironment, { type: EnvironmentType.STATIC });
+  wallsEntity.addComponent(PhysicsShape, { shape: PhysicsShapeType.Auto });
+  wallsEntity.addComponent(PhysicsBody, { state: PhysicsState.Static });
+
+  const loader = new GLTFLoader();
+  loader.load('/models/swordModel.gltf', (gltf) => {
+    const swordModel = gltf.scene;
+    swordModel.position.set(0,2,0);
+    const swordEntity = world.createTransformEntity(swordModel);
+    swordEntity.addComponent(OneHandGrabbable);
+    swordEntity.addComponent(PhysicsShape, { shape: PhysicsShapeType.ConvexHull });
+    swordEntity.addComponent(PhysicsBody, { state: PhysicsState.Dynamic });
+  });  
 
   const GameLoopSystem = class extends createSystem() {
     update(delta, time) {
