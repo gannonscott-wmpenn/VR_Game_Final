@@ -20,7 +20,8 @@ import {
   Group,
   CylinderGeometry,
   CapsuleGeometry,
-  Vector3
+  Vector3,
+  CanvasTexture
 } from '@iwsdk/core';
 
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -112,8 +113,42 @@ World.create(document.getElementById('scene-container'), {
   let lastClubPos = new Vector3();
   clubMesh.getWorldPosition(lastClubPos);
   let clubVelocity = new Vector3();
-  let hitCount = 0;
   let lastHitTime = 0;
+  
+  // Enemy health and state
+  let enemyHealth = 100;
+  let enemyMaxHealth = 100;
+  let isDefeated = false;
+  let defeatTimer = 0;
+  const defeatDuration = 5; // seconds before respawn
+  let killCount = 0;
+
+  // Create scoreboard
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  
+  function updateScoreboard() {
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 60px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('KILLS', canvas.width / 2, 80);
+    ctx.font = 'bold 100px Arial';
+    ctx.fillText(killCount.toString(), canvas.width / 2, 200);
+    scoreboardTexture.needsUpdate = true;
+  }
+  
+  const scoreboardTexture = new CanvasTexture(canvas);
+  const scoreboardGeom = new PlaneGeometry(4, 3);
+  const scoreboardMtrl = new MeshBasicMaterial({ map: scoreboardTexture });
+  const scoreboardMesh = new Mesh(scoreboardGeom, scoreboardMtrl);
+  scoreboardMesh.position.set(0, 7, -17);
+  const scoreboardEntity = world.createTransformEntity(scoreboardMesh);
+  
+  updateScoreboard();
 
   // ***Code that doesn't work correctly right now ;-;***
   //const loader = new GLTFLoader();
@@ -133,6 +168,26 @@ World.create(document.getElementById('scene-container'), {
       clubMesh.getWorldPosition(currentClubPos);
       clubVelocity.subVectors(currentClubPos, lastClubPos).divideScalar(delta);
       lastClubPos.copy(currentClubPos);
+      
+      // Handle defeated enemy
+      if (isDefeated) {
+        defeatTimer -= delta;
+        if (defeatTimer <= 0) {
+          // Respawn enemy
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 10 + Math.random() * 5;
+          Enemy.object3D.position.set(
+            Math.cos(angle) * distance,
+            1.3,
+            Math.sin(angle) * distance
+          );
+          enemyMtrl.color.setHex(0xff0000); // Back to red on respawn
+          enemyHealth = enemyMaxHealth;
+          isDefeated = false;
+          console.log('Enemy respawned!');
+        }
+        return; // Skip movement and hit detection while defeated
+      }
       
       // Move enemy towards player
       const enemyPos = Enemy.object3D.position;
@@ -158,19 +213,30 @@ World.create(document.getElementById('scene-container'), {
       const hitRadius = 0.8; // How close the club needs to be
       const damageVelocity = 2.0; // Minimum speed to count as a hit
       const hitCooldown = 0.5; // Seconds between hits to prevent double-counting
+      const damagePerHit = 25;
 
       if (clubToEnemy < hitRadius && clubVelocity.length() > damageVelocity) {
         // Check if enough time has passed since last hit
         if (time - lastHitTime > hitCooldown) {
-          hitCount++;
+          enemyHealth -= damagePerHit;
           lastHitTime = time;
-          console.log(`HIT! Total hits: ${hitCount} (velocity: ${clubVelocity.length().toFixed(2)})`);
+          console.log(`HIT! Enemy health: ${enemyHealth}/${enemyMaxHealth} (velocity: ${clubVelocity.length().toFixed(2)})`);
           
-          // Flash enemy white briefly to show hit
-          enemyMtrl.color.setHex(0xffffff);
-          setTimeout(() => {
-            enemyMtrl.color.setHex(0xff0000);
-          }, 100);
+          // Check if enemy is defeated
+          if (enemyHealth <= 0) {
+            isDefeated = true;
+            defeatTimer = defeatDuration;
+            enemyMtrl.color.setHex(0x111111); // Turn very dark grey/black when defeated
+            killCount++;
+            updateScoreboard();
+            console.log(`Enemy defeated! Total kills: ${killCount}`);
+          } else {
+            // Only flash white if not defeated
+            enemyMtrl.color.setHex(0xffffff);
+            setTimeout(() => {
+              enemyMtrl.color.setHex(0xff0000);
+            }, 100);
+          }
         }
       }
     }
