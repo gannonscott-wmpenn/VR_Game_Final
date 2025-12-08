@@ -19,7 +19,9 @@ import {
   PhysicsBody, PhysicsShape, PhysicsShapeType, PhysicsState, PhysicsSystem,
   createSystem,
   OneHandGrabbable,
-  Group
+  Group,
+  CylinderGeometry,
+  CapsuleGeometry
 } from '@iwsdk/core';
 
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -84,15 +86,38 @@ World.create(document.getElementById('scene-container'), {
   wallsEntity.addComponent(PhysicsShape, { shape: PhysicsShapeType.Auto });
   wallsEntity.addComponent(PhysicsBody, { state: PhysicsState.Static });
 
-  const loader = new GLTFLoader();
-  loader.load('/models/swordModel.gltf', (gltf) => {
-    const swordModel = gltf.scene;
-    swordModel.position.set(0,2,0);
-    const swordEntity = world.createTransformEntity(swordModel);
-    swordEntity.addComponent(OneHandGrabbable);
-    swordEntity.addComponent(PhysicsShape, { shape: PhysicsShapeType.ConvexHull });
-    swordEntity.addComponent(PhysicsBody, { state: PhysicsState.Dynamic });
-  });  
+  // Placeholder enemy while I figure out how to properly import my models
+  const enemyGeom = new CapsuleGeometry(1, 2, 6, 24)
+  const enemyMtrl = new MeshStandardMaterial({ 
+    color: 'red'
+  });
+  const enemyMesh = new Mesh(enemyGeom, enemyMtrl);
+  enemyMesh.position.set(0,1,18);
+  const Enemy = world.createTransformEntity(enemyMesh);
+  Enemy.addComponent(PhysicsShape, { shape: PhysicsShapeType.Auto });
+  Enemy.addComponent(PhysicsBody, { state: PhysicsState.Kinematic });
+
+  // Temporary/"Club" Weapon
+  const clubGeom = new CylinderGeometry();
+  const clubMtrl = new MeshStandardMaterial({ 
+    color: 0x694724
+  });
+  const clubMesh = new Mesh(clubGeom, clubMtrl);
+  clubMesh.position.set(0,1,0);
+  const clubEntity = world.createTransformEntity(clubMesh);
+  clubEntity.addComponent(PhysicsShape, { shape: PhysicsShapeType.Auto });
+  clubEntity.addComponent(PhysicsBody, { state: PhysicsState.Kinematic });
+
+  // ***Code that doesn't work correctly right now ;-;***
+  //const loader = new GLTFLoader();
+  //loader.load('/models/swordModel.gltf', (gltf) => {
+    //const swordModel = gltf.scene;
+    //swordModel.position.set(0,2,0);
+    //const swordEntity = world.createTransformEntity(swordModel);
+    //swordEntity.addComponent(OneHandGrabbable);
+    //swordEntity.addComponent(PhysicsShape, { shape: PhysicsShapeType.ConvexHull });
+    //swordEntity.addComponent(PhysicsBody, { state: PhysicsState.Dynamic });
+  //});  
 
   const GameLoopSystem = class extends createSystem() {
     update(delta, time) {
