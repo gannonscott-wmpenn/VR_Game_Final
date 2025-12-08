@@ -31,8 +31,8 @@ import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 
 const assets = {
-  chimeSound: {
-    url: '/audio/chime.mp3',
+  hitSound: {
+    url: '/audio/damageSFX.mp3',
     type: AssetType.Audio,
     priority: 'background'
   },
@@ -120,7 +120,7 @@ World.create(document.getElementById('scene-container'), {
   let enemyMaxHealth = 100;
   let isDefeated = false;
   let defeatTimer = 0;
-  const defeatDuration = 5; // seconds before respawn
+  const defeatDuration = 3; // seconds before respawn
   let killCount = 0;
 
   // Create scoreboard
@@ -211,7 +211,7 @@ World.create(document.getElementById('scene-container'), {
       // Check for hits
       const clubToEnemy = currentClubPos.distanceTo(enemyPos);
       const hitRadius = 0.8; // How close the club needs to be
-      const damageVelocity = 2.0; // Minimum speed to count as a hit
+      const damageVelocity = 6.0; // Minimum speed to count as a hit
       const hitCooldown = 0.5; // Seconds between hits to prevent double-counting
       const damagePerHit = 25;
 
