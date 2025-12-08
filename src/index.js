@@ -148,7 +148,7 @@ World.create(document.getElementById('scene-container'), {
       
       // Only move if not too close to player
       if (distance > 1.5) {
-        const moveSpeed = 0.5; // units per second
+        const moveSpeed = 1.5; // units per second
         enemyPos.x += (dx / distance) * moveSpeed * delta;
         enemyPos.z += (dz / distance) * moveSpeed * delta;
       }
